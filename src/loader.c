@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,10 +8,42 @@
 #include <bfd.h>
 
 /*
- * - TODO: Implement SymbolList
  * - TODO: Implement SectionList
  * - TODO: Figure out how to split code into multiple files
  */
+
+bool symbol_list_is_empty(struct SymbolList *list) {
+  return (list->head == NULL) && (list->tail == NULL);
+};
+
+void free_symbol_list(struct SymbolList *list) {
+  struct SymbolListNode *current = list->head;
+  struct SymbolListNode *tmp;
+
+  while (current) {
+    tmp = current;
+    current = tmp->next;
+    free(tmp);
+  }
+};
+
+void push_symbol_to_list(struct SymbolList *list, struct Symbol *sym) {
+  struct SymbolListNode *node =
+      (struct SymbolListNode *)malloc(sizeof(struct SymbolListNode));
+  node->symbol = sym;
+  node->next = NULL;
+  if (symbol_list_is_empty(list)) {
+    list->head = node;
+    list->tail = list->head;
+  } else {
+    list->tail->next = node;
+    list->tail = node;
+  }
+};
+
+bool section_list_is_empty(struct SectionList *list) {
+  return (list->head == NULL) && (list->tail == NULL);
+};
 
 static bfd *open_bfd(char *fname) {
   static int bfd_is_initialized = 0;
@@ -272,3 +305,5 @@ cleanup:
 int load_binary(char *fname, struct Binary *bin, BinaryType type) {
   return load_binary_bfd(fname, bin, type);
 };
+
+void unload_binary(struct Binary *bin) { free_symbol_list(&bin->symbols); };

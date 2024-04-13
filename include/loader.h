@@ -5,12 +5,12 @@
 #include <stdint.h>
 
 struct Symbol;
-void print_symbol(struct Symbol *sym);
+char *get_symbol_string(struct Symbol *sym);
 
 struct SymbolListNode;
-struct Symbol *get_symbol_from_node(struct SymbolListNode *node);
 
 struct SymbolList;
+bool symbol_list_is_empty(struct SymbolList *list);
 void push_symbol_to_list(struct SymbolList *list, struct Symbol *sym);
 void free_symbol_list(struct SymbolList *list);
 
@@ -31,7 +31,6 @@ typedef enum {
  * Wrapper for a Section in a SectionList.
  */
 struct SectionListNode;
-struct Section *get_section_from_node(struct SectionListNode *node);
 
 /*
  * Singly Linked List of Sections.
