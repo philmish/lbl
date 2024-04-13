@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 struct Symbol;
-char *get_symbol_string(struct Symbol *sym);
 
 struct SymbolListNode;
 
@@ -54,9 +53,12 @@ typedef enum {
   ARCH_X86 = 1,
 } BinaryArch;
 
-struct Section *get_text_section(struct Binary bin);
-int load_binary(char *fname, struct Binary *bin, BinaryType type);
+struct Section *get_text_section(struct Binary *bin);
+int load_binary(char *fname, struct Binary *bin);
 void unload_binary(struct Binary *bin);
+void print_binary_info(struct Binary *bin);
+void print_binary_sections(struct Binary *bin);
+void print_binary_symbols(struct Binary *bin);
 
 struct Symbol {
   SymbolType type;

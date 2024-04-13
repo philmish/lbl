@@ -128,7 +128,6 @@ static int load_symbols_bfd(bfd *bfd_h, struct Binary *bin) {
   int ret;
   long n, nsyms, i;
   asymbol **bfd_symtab;
-  struct Symbol *sym;
 
   bfd_symtab = NULL;
 
@@ -178,7 +177,6 @@ static int load_dynsym_bfd(bfd *bfd_h, struct Binary *bin) {
   int ret;
   long n, nsyms, i;
   asymbol **bfd_dynsym;
-  struct Symbol *sym;
 
   bfd_dynsym = NULL;
 
@@ -229,7 +227,6 @@ static int load_sections_bfd(bfd *bfd_h, struct Binary *bin) {
   uint64_t vma, size;
   const char *secname;
   asection *bfd_sec;
-  struct Section *sec;
   SectionType sectype;
 
   for (bfd_sec = bfd_h->sections; bfd_sec; bfd_sec = bfd_sec->next) {
@@ -280,7 +277,7 @@ static int load_sections_bfd(bfd *bfd_h, struct Binary *bin) {
   return 0;
 };
 
-static int load_binary_bfd(char *fname, struct Binary *bin, BinaryType type) {
+static int load_binary_bfd(char *fname, struct Binary *bin) {
   int ret;
   bfd *bfd_h;
   const bfd_arch_info_type *bfd_info;
@@ -345,11 +342,79 @@ cleanup:
   return ret;
 };
 
-int load_binary(char *fname, struct Binary *bin, BinaryType type) {
-  return load_binary_bfd(fname, bin, type);
+struct Section *get_text_section(struct Binary *bin) {
+  struct Section *sec = NULL;
+  if (section_list_is_empty(&bin->sections)) {
+    return sec;
+  };
+  return get_section_by_name(&bin->sections, ".text");
+};
+
+int load_binary(char *fname, struct Binary *bin) {
+  return load_binary_bfd(fname, bin);
 };
 
 void unload_binary(struct Binary *bin) {
   free_symbol_list(&bin->symbols);
   free_section_list(&bin->sections);
 };
+
+void print_binary_info(struct Binary *bin) {
+  printf("loaded binary '%s' %s/%s (%u bits) entry@0x%016jx\n", bin->filename,
+         bin->type_str, bin->arch_str, bin->bits, bin->entry);
+};
+
+void print_binary_sections(struct Binary *bin) {
+  if (section_list_is_empty(&bin->sections)) {
+    printf("no sections loaded\n");
+  } else {
+    printf("Loaded Sections:\n");
+    struct SectionListNode *current = bin->sections.head;
+    while (current) {
+      printf(" 0x%016jx %-8ju %-20s %s\n", current->section->vma,
+             current->section->size, current->section->name,
+             current->section->type == SEC_TYPE_CODE ? "CODE" : "DATA");
+      current = current->next;
+    }
+  }
+};
+
+void print_binary_symbols(struct Binary *bin) {
+  if (symbol_list_is_empty(&bin->symbols)) {
+    printf("no symbols loaded\n");
+  } else {
+    printf("Loaded Symbols:\n");
+    struct SymbolListNode *current = bin->symbols.head;
+    while (current) {
+      printf(" %-40s 0x%016jx %s\n", current->symbol->name,
+             current->symbol->addr,
+             (current->symbol->type & SYM_TYPE_FUNC) ? "FUNC" : "");
+      current = current->next;
+    }
+  }
+};
+
+int main(int argc, char *argv[]) {
+  struct Binary bin;
+  struct SectionList secList = {NULL, NULL};
+  struct SymbolList symList = {NULL, NULL};
+  char *fname;
+  bin.sections = secList;
+  bin.symbols = symList;
+
+  if (argc < 2) {
+    printf("Usage: %s <binary>\n", argv[0]);
+    return 1;
+  }
+
+  fname = argv[1];
+  if (load_binary(fname, &bin) < 0) {
+    return 1;
+  }
+  print_binary_info(&bin);
+  print_binary_sections(&bin);
+  print_binary_symbols(&bin);
+
+  unload_binary(&bin);
+  return 0;
+}
