@@ -2,13 +2,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define PACKAGE "lbl"
 #define PACKAGE_VERSION "0.0.1"
 #include "../include/loader.h"
 #include <bfd.h>
 
 /*
- * - TODO: Implement SectionList
  * - TODO: Figure out how to split code into multiple files
  */
 
@@ -43,6 +43,47 @@ void push_symbol_to_list(struct SymbolList *list, struct Symbol *sym) {
 
 bool section_list_is_empty(struct SectionList *list) {
   return (list->head == NULL) && (list->tail == NULL);
+};
+
+void free_section_list(struct SectionList *list) {
+  struct SectionListNode *current = list->head;
+  struct SectionListNode *tmp;
+
+  while (current) {
+    tmp = current;
+    current = tmp->next;
+    if (tmp->section->bytes) {
+      free(tmp->section->bytes);
+    }
+    free(tmp);
+  }
+};
+
+struct Section *get_section_by_name(struct SectionList *list, char *name) {
+  struct SectionListNode *current = list->head;
+
+  while (current) {
+    if (strcmp(name, current->section->name) == 0) {
+      return current->section;
+    }
+    current = current->next;
+  }
+  return NULL;
+};
+
+void push_section_to_list(struct SectionList *list, struct Section *sec) {
+  struct SectionListNode *node =
+      (struct SectionListNode *)malloc(sizeof(struct SectionListNode));
+  node->section = sec;
+  node->next = NULL;
+
+  if (section_list_is_empty(list)) {
+    list->head = node;
+    list->tail = list->head;
+  } else {
+    list->tail->next = node;
+    list->tail = node;
+  }
 };
 
 static bfd *open_bfd(char *fname) {
@@ -193,10 +234,12 @@ static int load_sections_bfd(bfd *bfd_h, struct Binary *bin) {
 
   for (bfd_sec = bfd_h->sections; bfd_sec; bfd_sec = bfd_sec->next) {
     /*
-     * TODO: Figure out if this is a problem and if this call can be replaced by
-     * just extracting the flags from the section
-     * */
-    bfd_flags = bfd_get_section_flags(bfd_h, bfd_sec);
+     * The Book uses the `bfd_get_section_flags` function here.
+     * This function seems to have been renamed to `bfd_section_flags`,
+     * as of this bug report from `binutils`:
+     * https://bugs.archlinux.org/task/65881
+     */
+    bfd_flags = bfd_section_flags(bfd_sec);
 
     sectype = SEC_TYPE_NONE;
     if (bfd_flags & SEC_CODE) {
@@ -231,6 +274,7 @@ static int load_sections_bfd(bfd *bfd_h, struct Binary *bin) {
               bfd_errmsg(bfd_get_error()));
       return -1;
     }
+    push_section_to_list(&bin->sections, temp);
   }
 
   return 0;
@@ -280,7 +324,6 @@ static int load_binary_bfd(char *fname, struct Binary *bin, BinaryType type) {
             bfd_info->printable_name);
     goto fail;
   }
-  /* TODO: Implement loading symbols and sections */
   load_symbols_bfd(bfd_h, bin);
   load_dynsym_bfd(bfd_h, bin);
 
@@ -306,4 +349,7 @@ int load_binary(char *fname, struct Binary *bin, BinaryType type) {
   return load_binary_bfd(fname, bin, type);
 };
 
-void unload_binary(struct Binary *bin) { free_symbol_list(&bin->symbols); };
+void unload_binary(struct Binary *bin) {
+  free_symbol_list(&bin->symbols);
+  free_section_list(&bin->sections);
+};
