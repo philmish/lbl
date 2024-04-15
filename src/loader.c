@@ -350,6 +350,13 @@ struct Section *get_text_section(struct Binary *bin) {
   return get_section_by_name(&bin->sections, ".text");
 };
 
+void init_binary(struct Binary *bin) {
+  struct SymbolList syms = {NULL, NULL};
+  struct SectionList secs = {NULL, NULL};
+  bin->sections = secs;
+  bin->symbols = syms;
+};
+
 int load_binary(char *fname, struct Binary *bin) {
   return load_binary_bfd(fname, bin);
 };
@@ -396,11 +403,8 @@ void print_binary_symbols(struct Binary *bin) {
 
 int main(int argc, char *argv[]) {
   struct Binary bin;
-  struct SectionList secList = {NULL, NULL};
-  struct SymbolList symList = {NULL, NULL};
+  init_binary(&bin);
   char *fname;
-  bin.sections = secList;
-  bin.symbols = symList;
 
   if (argc < 2) {
     printf("Usage: %s <binary>\n", argv[0]);

@@ -54,6 +54,7 @@ typedef enum {
 } BinaryArch;
 
 struct Section *get_text_section(struct Binary *bin);
+void init_binary(struct Binary *bin);
 int load_binary(char *fname, struct Binary *bin);
 void unload_binary(struct Binary *bin);
 void print_binary_info(struct Binary *bin);
