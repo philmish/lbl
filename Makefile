@@ -16,7 +16,8 @@ NAME := lbl
 
 SRC_DIR := src
 OBJ_DIR := obj
-SRCS := loader.c
+SRCS := loader.c \
+	main.c
 
 # Generates a list of paths to source files
 # in the src directory from the list of .c

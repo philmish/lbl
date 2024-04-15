@@ -8,10 +8,6 @@
 #include "../include/loader.h"
 #include <bfd.h>
 
-/*
- * - TODO: Figure out how to split code into multiple files
- */
-
 bool symbol_list_is_empty(struct SymbolList *list) {
   return (list->head == NULL) && (list->tail == NULL);
 };
@@ -400,25 +396,3 @@ void print_binary_symbols(struct Binary *bin) {
     }
   }
 };
-
-int main(int argc, char *argv[]) {
-  struct Binary bin;
-  init_binary(&bin);
-  char *fname;
-
-  if (argc < 2) {
-    printf("Usage: %s <binary>\n", argv[0]);
-    return 1;
-  }
-
-  fname = argv[1];
-  if (load_binary(fname, &bin) < 0) {
-    return 1;
-  }
-  print_binary_info(&bin);
-  print_binary_sections(&bin);
-  print_binary_symbols(&bin);
-
-  unload_binary(&bin);
-  return 0;
-}
